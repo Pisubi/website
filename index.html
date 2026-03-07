@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pisubí | Análisis de datos y opinión pública</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #1e3a47;
+    --teal-mid: #2d5468;
+    --teal-light: #3d6b84;
+    --orange: #c8602a;
+    --orange-light: #d97840;
+    --greige: #cac4b0;
+    --greige-mid: #d8d3c5;
+    --greige-light: #e4e0d4;
+    --greige-dark: #a8a292;
+    --cream: #f0ece3;
+    --dark: #0f2230;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--greige);
+    color: var(--teal);
+    overflow-x: hidden;
+    cursor: none;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── CURSOR ── */
+  .cursor {
+    width: 10px; height: 10px;
+    background: var(--orange); border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease;
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1.5px solid var(--orange); border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%); opacity: 0.5;
+  }
+
+  /* ── PAGE TRANSITION ── */
+  .page-transition {
+    position: fixed; inset: 0; z-index: 10000;
+    background: var(--teal);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .page-transition.active {
+    opacity: 1; pointer-events: all;
+  }
+
+  /* ── LANDING LAYOUT ── */
+  .landing {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 60px 40px;
+    position: relative;
+    min-height: 100vh;
+  }
+
+  /* Background decoration */
+  .landing-bg {
+    position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  }
+  .landing-bg-text {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(120px, 20vw, 280px);
+    color: rgba(30,58,71,0.04);
+    white-space: nowrap; user-select: none;
+    letter-spacing: -0.02em;
+    animation: driftSlow 20s ease-in-out infinite alternate;
+  }
+  @keyframes driftSlow {
+    from { transform: translate(-52%,-50%) rotate(-1deg); }
+    to   { transform: translate(-48%,-50%) rotate(1deg); }
+  }
+  .bg-circle {
+    position: absolute; border-radius: 50%;
+  }
+  .bg-circle-1 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(200,96,42,0.06) 0%, transparent 70%);
+    top: -100px; right: -80px;
+    animation: pulse 12s ease-in-out infinite;
+  }
+  .bg-circle-2 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(30,58,71,0.06) 0%, transparent 70%);
+    bottom: -50px; left: -100px;
+    animation: pulse 16s ease-in-out infinite reverse;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+  /* ── LOGO HEADER ── */
+  .landing-header {
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative; z-index: 1;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.2s;
+  }
+  .landing-logo { height: 48px; }
+
+  .landing-tagline {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 4vw, 48px);
+    color: var(--teal);
+    text-align: center;
+    margin-bottom: 12px;
+    position: relative; z-index: 1;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 0.4s;
+    letter-spacing: -0.01em;
+  }
+  .landing-tagline em { font-style: italic; color: var(--orange); }
+
+  .landing-subtitle {
+    font-size: 0.95rem;
+    color: var(--teal);
+    opacity: 0;
+    text-align: center;
+    max-width: 460px;
+    line-height: 1.7;
+    font-weight: 300;
+    margin-bottom: 64px;
+    position: relative; z-index: 1;
+    animation: fadeUp 0.8s ease forwards 0.55s;
+  }
+
+  /* ── CARDS CONTAINER ── */
+  .cards-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 920px;
+    width: 100%;
+    position: relative; z-index: 1;
+  }
+
+  /* ── DIVISION CARD ── */
+  .division-card {
+    position: relative;
+    background: var(--cream);
+    border-radius: 14px;
+    padding: 48px 40px 44px;
+    border: 1px solid rgba(30,58,71,0.07);
+    overflow: hidden;
+    transition: transform 0.4s cubic-bezier(0.23,1,0.32,1),
+                box-shadow 0.4s cubic-bezier(0.23,1,0.32,1),
+                border-color 0.3s ease;
+    opacity: 0;
+    cursor: none;
+  }
+  .division-card:nth-child(1) { animation: fadeUp 0.7s ease forwards 0.7s; }
+  .division-card:nth-child(2) { animation: fadeUp 0.7s ease forwards 0.85s; }
+
+  .division-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    transition: height 0.4s ease;
+  }
+  .division-card--opinion::before { background: var(--teal); }
+  .division-card--empresas::before { background: var(--orange); }
+
+  .division-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 24px 64px rgba(15,34,48,0.15);
+    border-color: rgba(30,58,71,0.14);
+  }
+  .division-card:hover::before { height: 4px; }
+
+  /* Card illustration area */
+  .card-illus {
+    width: 72px; height: 72px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .division-card--opinion .card-illus { background: rgba(30,58,71,0.08); }
+  .division-card--empresas .card-illus { background: rgba(200,96,42,0.1); }
+
+  .card-illus svg {
+    width: 32px; height: 32px;
+    stroke-width: 1.5;
+    fill: none;
+  }
+  .division-card--opinion .card-illus svg { stroke: var(--teal); }
+  .division-card--empresas .card-illus svg { stroke: var(--orange); }
+
+  .card-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  .division-card--opinion .card-label { color: var(--teal-light); }
+  .division-card--empresas .card-label { color: var(--orange); }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.65rem;
+    color: var(--teal);
+    margin-bottom: 14px;
+    line-height: 1.2;
+  }
+
+  .card-desc {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: var(--teal);
+    opacity: 0.55;
+    font-weight: 300;
+    margin-bottom: 32px;
+  }
+
+  .card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.88rem;
+    letter-spacing: 0.03em;
+    border-radius: 3px;
+    transition: background 0.2s, transform 0.2s, gap 0.2s;
+  }
+  .division-card--opinion .card-btn {
+    background: var(--teal);
+    color: var(--cream);
+  }
+  .division-card--opinion .card-btn:hover {
+    background: var(--teal-mid);
+    transform: translateY(-2px);
+    gap: 14px;
+  }
+  .division-card--empresas .card-btn {
+    background: var(--orange);
+    color: white;
+  }
+  .division-card--empresas .card-btn:hover {
+    background: var(--orange-light);
+    transform: translateY(-2px);
+    gap: 14px;
+  }
+
+  /* ── FOOTER ── */
+  .landing-footer {
+    text-align: center;
+    padding: 40px;
+    position: relative; z-index: 1;
+    opacity: 0;
+    animation: fadeUp 0.8s ease forwards 1s;
+  }
+  .landing-footer a {
+    color: var(--teal);
+    opacity: 0.5;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: opacity 0.2s, color 0.2s;
+  }
+  .landing-footer a:hover { opacity: 1; color: var(--orange); }
+  .landing-footer p {
+    font-size: 0.78rem;
+    color: var(--teal);
+    opacity: 0.3;
+    margin-top: 10px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(25px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── MOBILE ── */
+  @media (max-width: 700px) {
+    .landing { padding: 48px 20px; }
+    .cards-container { grid-template-columns: 1fr; max-width: 440px; }
+    .division-card { padding: 36px 28px 36px; }
+    .landing-tagline { font-size: clamp(24px, 7vw, 36px); }
+    .landing-subtitle { font-size: 0.88rem; margin-bottom: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="page-transition" id="pageTransition"></div>
+
+<div class="landing">
+  <div class="landing-bg">
+    <div class="landing-bg-text">Pisubí</div>
+    <div class="bg-circle bg-circle-1"></div>
+    <div class="bg-circle bg-circle-2"></div>
+  </div>
+
+  <div class="landing-header">
+    <svg class="landing-logo" viewBox="0 0 215 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="17" cy="28" r="9" fill="#c8602a"/>
+      <rect x="10" y="6" width="5" height="13" rx="2.5" fill="#c8602a" transform="rotate(-25 14 13)"/>
+      <text x="33" y="33" font-family="DM Sans, sans-serif" font-weight="600" font-size="25" fill="#1e3a47" letter-spacing="-0.4">Pisubí</text>
+    </svg>
+  </div>
+
+  <h1 class="landing-tagline">Datos que <em>leen</em> la realidad.</h1>
+  <p class="landing-subtitle">Consultora especializada en análisis de datos, opinión pública y estrategia política. Elegí tu área de interés.</p>
+
+  <div class="cards-container">
+    <!-- OPINION PUBLICA -->
+    <div class="division-card division-card--opinion">
+      <div class="card-illus">
+        <svg viewBox="0 0 24 24">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div class="card-label">División</div>
+      <div class="card-title">Opinión Pública</div>
+      <p class="card-desc">Estudios de opinión, análisis electoral y político para la toma de decisiones estratégicas.</p>
+      <a href="opinion-publica.html" class="card-btn page-link">Explorar <span>&rarr;</span></a>
+    </div>
+
+    <!-- EMPRESAS -->
+    <div class="division-card division-card--empresas">
+      <div class="card-illus">
+        <svg viewBox="0 0 24 24">
+          <rect x="2" y="10" width="4" height="11" rx="1"/>
+          <rect x="10" y="5" width="4" height="16" rx="1"/>
+          <rect x="18" y="2" width="4" height="19" rx="1"/>
+          <line x1="1" y1="22" x2="23" y2="22"/>
+        </svg>
+      </div>
+      <div class="card-label">División</div>
+      <div class="card-title">Empresas</div>
+      <p class="card-desc">Soluciones de datos para el sector privado: análisis de mercado, dashboards e inteligencia de negocio.</p>
+      <a href="empresas.html" class="card-btn page-link">Explorar <span>&rarr;</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="landing-footer">
+  <a href="mailto:info@pisubi.com.ar">info@pisubi.com.ar</a>
+  <p>&copy; 2025 Pisubí. Buenos Aires, Argentina.</p>
+</div>
+
+<script>
+  // ── Cursor ──
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove', e => {
+    mx=e.clientX; my=e.clientY;
+    cursor.style.left=mx+'px'; cursor.style.top=my+'px';
+  });
+  (function anim(){
+    rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
+    ring.style.left=rx+'px'; ring.style.top=ry+'px';
+    requestAnimationFrame(anim);
+  })();
+  document.querySelectorAll('a,button,.division-card').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{cursor.style.transform='translate(-50%,-50%) scale(2)';ring.style.transform='translate(-50%,-50%) scale(1.4)';});
+    el.addEventListener('mouseleave',()=>{cursor.style.transform='translate(-50%,-50%) scale(1)';ring.style.transform='translate(-50%,-50%) scale(1)';});
+  });
+
+  // ── Page transition ──
+  const transition = document.getElementById('pageTransition');
+  document.querySelectorAll('.page-link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const href = link.getAttribute('href');
+      transition.classList.add('active');
+      setTimeout(() => { window.location.href = href; }, 400);
+    });
+  });
+
+  // Fade in on load
+  window.addEventListener('pageshow', () => {
+    transition.classList.remove('active');
+  });
+</script>
+</body>
+</html>
